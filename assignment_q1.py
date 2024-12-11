@@ -18,20 +18,20 @@ def read_keywords(file_path, sheet_name):
         return []
     sheet = wb[sheet_name]
     keywords = []
-    
+
     for row in sheet.iter_rows(min_row=3, min_col=3, max_col=3, max_row=sheet.max_row):
         keyword = row[0].value
         if keyword:
             keywords.append(keyword)
         else:
-            break
+            break 
     return keywords
 
 def today_day():
     today = datetime.datetime.today()
-    return today.strftime('%A')
+    return today.strftime('%A') 
 
-def write_results_to_excel(file_path, sheet_name, row, longest, shortest):
+def write_results(file_path, sheet_name, row, longest, shortest):
     wb = openpyxl.load_workbook(file_path)
     sheet = wb[sheet_name]
     sheet[f"D{row}"] = longest
@@ -39,18 +39,18 @@ def write_results_to_excel(file_path, sheet_name, row, longest, shortest):
     wb.save(file_path)
 
 
-
-file_path = "Excel.xlsx" 
+file_path = "Excel.xlsx"  
 
 today_day = today_day()
-#print(f"Today's day is: {today_day}")
+# print(f"Today's day is: {today_day}")
 
 wb = openpyxl.load_workbook(file_path)
 sheets = wb.sheetnames
 if today_day in sheets:
     sheet_name = today_day
+    # print(f"Using the sheet for today: {sheet_name}")
 else:
-    sheet_name = "Saturday"
+    sheet_name = "Saturday"  
 
 keywords = read_keywords(file_path, sheet_name)
 
@@ -60,26 +60,24 @@ if keywords:
         driver.get("https://www.google.com")
         search_box = driver.find_element(By.NAME, "q")
         search_box.send_keys(keyword)
-        search_box.send_keys(Keys.RETURN)
         time.sleep(3)
+        suggestion_elements = driver.find_elements(By.CSS_SELECTOR, "ul[role='listbox'] li span")
+        suggestions = [element.text for element in suggestion_elements if element.text.strip() != ""]
 
-        search_results = driver.find_elements(By.CSS_SELECTOR, "h3")
-
-        results = [result.text for result in search_results if result.text.strip() != ""]
-
-        if results:
-            longest_title = max(results, key=lambda result: len(result))
-            shortest_title = min(results, key=lambda result: len(result))
-            # print("Longest Search Result Title: ", longest_title)
-            # print("Shortest Search Result Title: ", shortest_title)
-
-            write_results_to_excel(file_path, sheet_name, row_number, longest_title, shortest_title)
+        if suggestions:
+            longest_suggestion = max(suggestions, key=len)
+            shortest_suggestion = min(suggestions, key=len)
+            # print("Longest Suggestion: ", longest_suggestion)
+            # print("Shortest Suggestion: ", shortest_suggestion)
             
+            write_results(file_path, sheet_name, row_number, longest_suggestion, shortest_suggestion)
+
             row_number += 1
         else:
-            print(f"No valid search results found for '{keyword}'.")
+            print(f"No suggestions found for '{keyword}'.")
 else:
     print("No keywords found in the selected sheet.")
-
+    
+    
 print("Excel sheed updated")
 driver.quit()
